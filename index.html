@@ -11,6 +11,25 @@
     <meta name="theme-color" content="#14b8a6">
     <meta name="description" content="אפליקציית הזמנות ללקוחות מזדמנים - ח.סבן">
   </head>
+  <!-- המלשינון: מציג שגיאות טעינה קריטיות על המסך -->
+<script>
+  window.addEventListener('error', function(event) {
+    var msg = event.message || "שגיאה לא ידועה";
+    var src = event.filename || "";
+    // התעלמות משגיאות לא קריטיות
+    if (msg.includes('ResizeObserver')) return;
+    
+    var div = document.createElement('div');
+    div.style = "position:fixed; top:0; left:0; right:0; background:#7f1d1d; color:white; padding:20px; z-index:99999; font-family:sans-serif; direction:ltr; text-align:left;";
+    div.innerHTML = "<h3>🚨 Critical Error</h3><p>" + msg + "</p><small>" + src + "</small>";
+    document.body.appendChild(div);
+  });
+</script>
+
+### והכי חשוב: תיקון המקור ב-GitHub
+כדי שה-404 ייעלם, אתה **חייב** לוודא את ההגדרה הזו ב-GitHub, אחרת שום קוד לא יעזור:
+1.  לך ל-**Settings** -> **Pages**.
+2.  שנה את **Source** ל-**GitHub Actions**. (אם זה על "Deploy from branch", זה תמיד ינסה לטעון את הקבצים הלא נכונים וייכשל).
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
