@@ -2,16 +2,28 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  // הגדרה קריטית: שם המאגר שלך ב-GitHub
+  // מוודא שהנתיבים יעבדו גם אם GitHub מגיש מתיקייה פנימית
   base: '/saban-pwa/', 
   
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    emptyOutDir: true,
+  },
+
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      // הגדרות למניעת שגיאות מטמון בגרסאות פיתוח
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
+      },
+      includeAssets: ['apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
         name: 'ח.סבן חומרי בנין',
         short_name: 'ח.סבן',
