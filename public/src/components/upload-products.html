@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מנהל מלאי ח.סבן - העלאה למאגר</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-8">
+
+    <div class="max-w-3xl mx-auto bg-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-700">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-3xl font-bold text-[#14b8a6]">ניהול מלאי - ח.סבן</h1>
+            <div class="text-xs text-gray-400">Firebase Firestore (Mode: Spark/Free)</div>
+        </div>
+
+        <p class="mb-6 text-gray-300">
+            כלי זה מאפשר לך להעלות רשימת מוצרים (JSON) למסד הנתונים בענן.
+            <br>
+            <span class="text-yellow-400 text-sm">שים לב: פעולה זו תוסיף מוצרים חדשים לקולקציית 'products'.</span>
+        </p>
+
+        <!-- אזור ה-JSON -->
+        <div class="mb-4">
+            <label class="block text-sm font-bold mb-2">נתוני מוצרים (JSON):</label>
+            <textarea id="jsonInput" class="w-full h-64 p-4 bg-gray-900 text-green-400 font-mono text-sm rounded-xl border border-gray-600 focus:border-[#14b8a6] outline-none" spellcheck="false"></textarea>
+        </div>
+
+        <!-- כפתורים -->
+        <div class="flex gap-4">
+            <button onclick="loadExample()" class="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold transition">
+                טען דוגמה (Seed Data)
+            </button>
+            <button onclick="uploadData()" class="flex-1 px-6 py-3 bg-[#14b8a6] hover:bg-[#0d9488] text-white rounded-xl font-bold shadow-lg shadow-teal-900/50 transition">
+                🚀 שגר לענן (Upload)
+            </button>
+        </div>
+
+        <!-- לוג פעילות -->
+        <div id="statusLog" class="mt-8 p-4 bg-black/50 rounded-xl font-mono text-xs text-gray-400 h-40 overflow-y-auto border border-gray-700 hidden"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // --- 1. הגדרות Firebase (העתק מ-firebase.js שלך) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDq0oVwS6zbEfsgrYBRkeBq80dDUKMedzo",
+            authDomain: "saban94-78949.firebaseapp.com",
+            projectId: "saban94-78949",
+            storageBucket: "saban94-78949.appspot.com",
+            messagingSenderId: "41553157903",
+            appId: "1:41553157903:web:cc33d252cff023be97a87a"
+        };
+
+        // אתחול
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- 2. נתונים לדוגמה (אותם נתונים מהאפליקציה) ---
+        window.exampleData = [
+            {
+                id: 'p_quartzite_001',
+                sku: 'QRTZ-25KG',
+                title: 'שק קוורצית (גרנוליט) דק',
+                brand: 'בטון עטרות',
+                supplier: 'ח.סבן אספקה',
+                image: 'https://betonatarot.co.il/wp-content/uploads/2020/06/%D7%A9%D7%A7-%D7%A7%D7%95%D7%95%D7%A8%D7%A6%D7%99%D7%AA-17.5.2020-s-.jpg',
+                description: 'אגרגט קוורץ טבעי בגוון לבן/קרם, משמש ליציקות דקורטיביות וחיפוי.',
+                features: ['גודל גרגר: 1.2-2.5 מ"מ', 'משקל שק: 25 ק"ג', 'עמידות לתנאי חוץ'],
+                technicalSpecs: { coveragePerM2: 'כ-50 ק"ג למ"ר', dryingTime: '24 שעות', standard: 'ת"י 118' },
+                price: 45,
+                stock: 150,
+                category: 'aggr'
+            },
+            {
+                id: 'p_cement_001',
+                sku: 'CMT-GRY',
+                title: 'מלט אפור 50 ק"ג',
+                brand: 'נשר',
+                supplier: 'נשר מפעלי מלט',
+                image: 'https://placehold.co/400x400/e2e8f0/1e293b?text=Cement',
+                description: 'מלט פורטלנד איכותי לבנייה כללית.',
+                features: ['חוזק בטון גבוה (B-30)', 'התקשות מהירה'],
+                technicalSpecs: { coveragePerM2: 'משתנה', dryingTime: '10 שעות', standard: 'ת"י 1' },
+                price: 28,
+                stock: 500,
+                category: 'cement'
+            },
+            {
+                id: 'p_ytong_10',
+                sku: 'YTG-10',
+                title: 'בלוק איטונג 10',
+                brand: 'איטונג',
+                supplier: 'איטונג ישראל',
+                image: 'https://placehold.co/400x400/f1f5f9/334155?text=Ytong',
+                description: 'בלוק לבן מבודד תרמית ואקוסטית.',
+                features: ['בידוד תרמי מעולה', 'קל משקל'],
+                technicalSpecs: { coveragePerM2: '10 יח׳ למ"ר', dryingTime: '-', standard: 'ת"י 268' },
+                price: 6.5,
+                stock: 1200,
+                category: 'blocks'
+            }
+        ];
+
+        // --- 3. פונקציות ממשק ---
+        window.loadExample = () => {
+            document.getElementById('jsonInput').value = JSON.stringify(window.exampleData, null, 2);
+        };
+
+        window.log = (msg, type = 'info') => {
+            const el = document.getElementById('statusLog');
+            el.classList.remove('hidden');
+            const color = type === 'success' ? 'text-green-400' : (type === 'error' ? 'text-red-400' : 'text-gray-300');
+            el.innerHTML += `<div class="${color}">> ${msg}</div>`;
+            el.scrollTop = el.scrollHeight;
+        };
+
+        window.uploadData = async () => {
+            const input = document.getElementById('jsonInput').value;
+            if (!input) return alert("הדבק JSON תקין");
+
+            try {
+                const products = JSON.parse(input);
+                window.log(`מתחיל העלאה של ${products.length} מוצרים...`);
+
+                // שימוש ב-Batch כדי לייעל את השליחה (הכל או כלום)
+                const batch = writeBatch(db);
+
+                products.forEach(p => {
+                    // יוצרים רפרנס למסמך בקולקציית 'products'
+                    // אם יש ID במוצר, נשתמש בו כשם המסמך. אם לא, המערכת תיצור אוטומטית.
+                    const docRef = doc(db, "products", p.id || 'new_' + Date.now());
+                    batch.set(docRef, p);
+                    window.log(`מכין להעלאה: ${p.title} (${p.sku})`);
+                });
+
+                await batch.commit();
+                window.log("✅ ההעלאה הושלמה בהצלחה!", "success");
+                alert("כל המוצרים עלו למאגר בהצלחה!");
+
+            } catch (e) {
+                console.error(e);
+                window.log(`❌ שגיאה: ${e.message}`, "error");
+                alert("שגיאה בהעלאה. בדוק את הקונסול.");
+            }
+        };
+    </script>
+</body>
+</html>
