@@ -10,6 +10,16 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     emptyOutDir: true,
+    sourcemap: true, // מאפשר לראות שגיאות בקוד המקור בדפדפן (חיוני לדיבוג)
+    manifest: true,
+    rollupOptions: {
+      output: {
+        // וידוא שקבצי JS מקבלים שמות קבועים למניעת בעיות מטמון
+        entryFileNames: 'assets/[name].[hash].js',
+        chunkFileNames: 'assets/[name].[hash].js',
+        assetFileNames: 'assets/[name].[hash].[ext]'
+      }
+    }
   },
 
   plugins: [
@@ -22,6 +32,8 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
+        // טיפול בשגיאות ניווט ב-SPA
+        navigateFallback: '/saban-pwa/index.html',
       },
       includeAssets: ['apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
